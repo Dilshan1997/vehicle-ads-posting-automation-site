@@ -31,6 +31,9 @@ export default function PostVehicle() {
   
   const [vehicleImages, setVehicleImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [documentFile, setDocumentFile] = useState(null);
+  const [documentPreview, setDocumentPreview] = useState(null);
+  const [documentType] = useState("emission_test"); // Always emission test
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,6 +91,23 @@ export default function PostVehicle() {
     setImagePreviews(newPreviews);
   };
 
+  const handleDocumentChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setDocumentFile(file);
+      const preview = URL.createObjectURL(file);
+      setDocumentPreview(preview);
+    }
+  };
+
+  const removeDocument = () => {
+    setDocumentFile(null);
+    setDocumentPreview(null);
+    if (document.getElementById('document-input')) {
+      document.getElementById('document-input').value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -107,6 +127,16 @@ export default function PostVehicle() {
       vehicleImages.forEach((image) => {
         data.append("images", image);
       });
+
+      // Validate and append document (required)
+      if (!documentFile) {
+        setError("Please upload an Emission Test Certificate. This is required for verification.");
+        setLoading(false);
+        return;
+      }
+      
+      data.append("document", documentFile);
+      data.append("document_type", "emission_test"); // Always emission test
 
       // Create the vehicle
       const createdVehicle = await vehicleAPI.createVehicle(data);
@@ -418,6 +448,89 @@ export default function PostVehicle() {
                 rows={5}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-vertical"
               />
+            </div>
+
+            {/* Document Upload Section */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+              <label className="block text-gray-700 font-bold mb-3 text-lg">
+                📄 Emission Test Certificate (Required) *
+              </label>
+              <p className="text-sm text-gray-600 mb-4">
+                Please upload your vehicle's <strong>Emission Test Certificate</strong> that clearly shows:
+                <br />• Fuel Type • Vehicle Class • Model Year • Manufacturer • Model • Registration No
+              </p>
+              
+              {formData.fuel_type === 'Electric' && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note for Electric Vehicles:</strong> If your electric vehicle doesn't have an emission test certificate, 
+                    please upload any official vehicle registration document that shows the required vehicle details.
+                  </p>
+                </div>
+              )}
+              
+              <input type="hidden" name="document_type" value="emission_test" />
+
+              {!documentPreview ? (
+                <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-white">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={handleDocumentChange}
+                    className="hidden"
+                    id="document-input"
+                    required
+                  />
+                  <label
+                    htmlFor="document-input"
+                    className="cursor-pointer flex flex-col items-center justify-center space-y-3"
+                  >
+                    <div className="text-5xl">📄</div>
+                    <div className="space-y-1">
+                      <p className="text-gray-700 font-semibold">Click to upload document</p>
+                      <p className="text-sm text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('document-input').click()}
+                      className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                    >
+                      Browse Files
+                    </button>
+                  </label>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="border-2 border-blue-300 rounded-lg p-4 bg-white">
+                    {documentPreview && documentFile.type.startsWith('image/') ? (
+                      <img
+                        src={documentPreview}
+                        alt="Document preview"
+                        className="max-w-full h-auto max-h-64 mx-auto rounded"
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-5xl mb-2">📄</div>
+                        <p className="text-gray-700 font-semibold">{documentFile.name}</p>
+                        <p className="text-sm text-gray-500">PDF Document</p>
+                      </div>
+                    )}
+                    <div className="mt-3 text-center">
+                      <p className="text-sm text-gray-600">
+                        <strong>Type:</strong> Emission Test Certificate
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeDocument}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition shadow-md"
+                    title="Remove document"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Images Upload */}

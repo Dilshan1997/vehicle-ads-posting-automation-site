@@ -12,7 +12,8 @@ from datetime import datetime
 from django.conf import settings
 from django.core.files.base import ContentFile
 from openai import OpenAI
-from .models import Vehicle, VehicleVerificationResult
+from .models import Vehicle, VehicleVerificationResult, VehicleDocument
+from .document_extraction_service import DocumentExtractionService
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +237,8 @@ Provide ONLY valid JSON response, no additional text."""
         vehicle: Vehicle, 
         ai_response: Dict, 
         raw_response: str,
-        images_count: int
+        images_count: int,
+        document_validation: Optional[Dict] = None
     ) -> VehicleVerificationResult:
         """
         Save verification results to database
@@ -283,6 +285,36 @@ Provide ONLY valid JSON response, no additional text."""
             # Score < 50 or other failure conditions: it's a failure, not manual review
             requires_manual_review = False
         
+        # Handle document validation data if provided
+        document_fuel_type = None
+        document_vehicle_class = None
+        document_model_year = None
+        document_manufacturer = None
+        document_plate_number = None
+        document_match_score = None
+        
+        if document_validation:
+            extracted_data = document_validation.get('extracted_data', {})
+            document_fuel_type = extracted_data.get('fuel_type')
+            document_vehicle_class = extracted_data.get('vehicle_class')
+            document_model_year = extracted_data.get('model_year')
+            document_manufacturer = extracted_data.get('manufacturer')
+            document_plate_number = extracted_data.get('plate_number')
+            document_match_score = document_validation.get('overall_score')
+            
+            # Add document discrepancies to main discrepancies list
+            doc_discrepancies = document_validation.get('discrepancies', [])
+            if doc_discrepancies:
+                if 'discrepancies' not in ai_response:
+                    ai_response['discrepancies'] = []
+                ai_response['discrepancies'].extend(doc_discrepancies)
+            
+            # Adjust overall score based on document match
+            # If document match is low, reduce overall confidence
+            if document_match_score and document_match_score < 70:
+                overall_score = min(overall_score, document_match_score * 0.9)  # Penalize for document mismatch
+                requires_manual_review = True
+        
         # Create verification result
         verification_result = VehicleVerificationResult.objects.create(
             vehicle=vehicle,
@@ -293,6 +325,13 @@ Provide ONLY valid JSON response, no additional text."""
             ai_detected_fuel_type=detected_info.get('fuel_type'),
             ai_detected_year=detected_info.get('year_range'),
             ai_detected_plate_number=detected_plate,
+            # Document-based information
+            document_fuel_type=document_fuel_type,
+            document_vehicle_class=document_vehicle_class,
+            document_model_year=document_model_year,
+            document_manufacturer=document_manufacturer,
+            document_plate_number=document_plate_number,
+            document_match_score=document_match_score,
             # Match scores
             brand_match_score=match_scores.get('brand_match'),
             model_match_score=match_scores.get('model_match'),
@@ -422,12 +461,42 @@ Provide ONLY valid JSON response, no additional text."""
                     'status': 'failed'
                 }
             
+            # Process document if available
+            document_validation = None
+            document = vehicle.documents.first()  # Get the first document (should be only one)
+            
+            if document:
+                # Extract data from document if not already extracted
+                if not document.extracted_data:
+                    extraction_service = DocumentExtractionService()
+                    extraction_result = extraction_service.extract_from_document(document)
+                    
+                    if extraction_result['success']:
+                        document.refresh_from_db()  # Refresh to get updated extracted_data
+                
+                # Validate document data against form data
+                if document.extracted_data:
+                    extraction_service = DocumentExtractionService()
+                    form_data = {
+                        'manufacturer': vehicle.manufacturer,
+                        'model': vehicle.model,
+                        'fuel_type': vehicle.fuel_type,
+                        'vehicle_type': vehicle.vehicle_type,
+                        'plate_number': vehicle.plate_number,
+                        'year': vehicle.year
+                    }
+                    document_validation = extraction_service.validate_against_form_data(
+                        document.extracted_data,
+                        form_data
+                    )
+            
             # Save verification result
             verification_result = self.save_verification_result(
                 vehicle=vehicle,
                 ai_response=api_response['data'],
                 raw_response=api_response['raw_response'],
-                images_count=len(image_urls)
+                images_count=len(image_urls),
+                document_validation=document_validation
             )
             
             return True, {

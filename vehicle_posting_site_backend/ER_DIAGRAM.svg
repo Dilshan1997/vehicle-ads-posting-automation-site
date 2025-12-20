@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="2100" viewBox="0 0 1400 2100">
+  <defs>
+    <style>
+      .entity-box { fill: #e8f4f8; stroke: #2c3e50; stroke-width: 2; }
+      .entity-title { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; }
+      .field-text { fill: #34495e; font-family: Arial, sans-serif; font-size: 12px; }
+      .pk-field { fill: #e74c3c; font-weight: bold; }
+      .fk-field { fill: #3498db; font-weight: bold; }
+      .nullable-field { fill: #95a5a6; font-style: italic; }
+      .relationship-line { stroke: #34495e; stroke-width: 2; fill: none; }
+      .relationship-label { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; }
+      .cardinality { fill: #e74c3c; font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; }
+      .separator { stroke: #34495e; stroke-width: 1; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#34495e"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1400" height="2000" fill="#ffffff"/>
+  
+  <!-- Title -->
+  <text x="700" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#2c3e50">
+    Vehicle Ads Posting Automation Site - ER Diagram
+  </text>
+  
+  <!-- User Entity -->
+  <g id="user-entity">
+    <rect x="50" y="80" width="280" height="360" class="entity-box" rx="5"/>
+    <text x="190" y="105" text-anchor="middle" class="entity-title">User</text>
+    <line x1="50" y1="120" x2="330" y2="120" class="separator"/>
+    
+    <!-- User Fields -->
+    <text x="60" y="145" class="field-text pk-field">PK id: bigint</text>
+    <text x="60" y="165" class="field-text">email: string (UNIQUE)</text>
+    <text x="60" y="185" class="field-text">name: string</text>
+    <text x="60" y="205" class="field-text nullable-field">phone_number: string (nullable)</text>
+    <text x="60" y="225" class="field-text nullable-field">nic_image_link: url (nullable)</text>
+    <text x="60" y="245" class="field-text">is_verified: boolean</text>
+    <text x="60" y="265" class="field-text nullable-field">verification_token: string (nullable)</text>
+    <text x="60" y="285" class="field-text nullable-field">token_expires_at: datetime (nullable)</text>
+    <text x="60" y="305" class="field-text">password: string</text>
+    <text x="60" y="325" class="field-text nullable-field">first_name: string (nullable)</text>
+    <text x="60" y="345" class="field-text nullable-field">last_name: string (nullable)</text>
+    <text x="60" y="365" class="field-text">is_staff: boolean</text>
+    <text x="60" y="385" class="field-text">is_active: boolean</text>
+    <text x="60" y="405" class="field-text">is_superuser: boolean</text>
+    <text x="60" y="425" class="field-text">date_joined: datetime</text>
+  </g>
+  
+  <!-- VehicleCategory Entity -->
+  <g id="category-entity">
+    <rect x="1070" y="80" width="280" height="100" class="entity-box" rx="5"/>
+    <text x="1210" y="105" text-anchor="middle" class="entity-title">VehicleCategory</text>
+    <line x1="1070" y1="120" x2="1350" y2="120" class="separator"/>
+    
+    <!-- VehicleCategory Fields -->
+    <text x="1080" y="145" class="field-text pk-field">PK id: bigint</text>
+    <text x="1080" y="165" class="field-text">name: string</text>
+  </g>
+  
+  <!-- Vehicle Entity -->
+  <g id="vehicle-entity">
+    <rect x="450" y="500" width="500" height="480" class="entity-box" rx="5"/>
+    <text x="700" y="525" text-anchor="middle" class="entity-title">Vehicle</text>
+    <line x1="450" y1="540" x2="950" y2="540" class="separator"/>
+    
+    <!-- Vehicle Fields -->
+    <text x="460" y="565" class="field-text pk-field">PK id: bigint</text>
+    <text x="460" y="585" class="field-text fk-field">FK posted_by_id: bigint → User</text>
+    <text x="460" y="605" class="field-text fk-field">FK category_id: bigint → VehicleCategory (nullable)</text>
+    <text x="460" y="625" class="field-text">manufacturer: string</text>
+    <text x="460" y="645" class="field-text">model: string</text>
+    <text x="460" y="665" class="field-text nullable-field">city: string (nullable)</text>
+    <text x="460" y="685" class="field-text">plate_number: string (UNIQUE, indexed)</text>
+    <text x="460" y="705" class="field-text nullable-field">year: smallint (nullable)</text>
+    <text x="460" y="725" class="field-text nullable-field">vehicle_type: string (nullable)</text>
+    <text x="460" y="745" class="field-text nullable-field">engine_capacity: string (nullable)</text>
+    <text x="460" y="765" class="field-text nullable-field">transmission: string (nullable)</text>
+    <text x="460" y="785" class="field-text nullable-field">fuel_type: string (nullable)</text>
+    <text x="460" y="805" class="field-text nullable-field">mileage: string (nullable)</text>
+    <text x="460" y="825" class="field-text nullable-field">price: decimal(12,2) (nullable)</text>
+    <text x="460" y="845" class="field-text nullable-field">description: text (nullable)</text>
+    <text x="460" y="865" class="field-text">verification_status: string</text>
+    <text x="460" y="885" class="field-text">is_verified: boolean</text>
+    <text x="460" y="905" class="field-text nullable-field">verification_score: float (nullable)</text>
+    <text x="460" y="925" class="field-text">verification_attempts: int</text>
+    <text x="460" y="945" class="field-text nullable-field">last_verification_at: datetime (nullable)</text>
+    <text x="460" y="965" class="field-text">created_at: datetime</text>
+  </g>
+  
+  <!-- VehicleImage Entity -->
+  <g id="vehicle-image-entity">
+    <rect x="50" y="1200" width="350" height="140" class="entity-box" rx="5"/>
+    <text x="225" y="1225" text-anchor="middle" class="entity-title">VehicleImage</text>
+    <line x1="50" y1="1240" x2="400" y2="1240" class="separator"/>
+    
+    <!-- VehicleImage Fields -->
+    <text x="60" y="1265" class="field-text pk-field">PK id: bigint</text>
+    <text x="60" y="1285" class="field-text fk-field">FK vehicle_id: bigint → Vehicle</text>
+    <text x="60" y="1305" class="field-text">image: image</text>
+    <text x="60" y="1325" class="field-text">is_primary: boolean</text>
+  </g>
+  
+  <!-- VehicleVerificationResult Entity -->
+  <g id="verification-result-entity">
+    <rect x="1000" y="1200" width="350" height="500" class="entity-box" rx="5"/>
+    <text x="1175" y="1225" text-anchor="middle" class="entity-title">VehicleVerificationResult</text>
+    <line x1="1000" y1="1240" x2="1350" y2="1240" class="separator"/>
+    
+    <!-- VehicleVerificationResult Fields -->
+    <text x="1010" y="1265" class="field-text pk-field">PK id: bigint</text>
+    <text x="1010" y="1285" class="field-text fk-field">FK vehicle_id: bigint → Vehicle</text>
+    <text x="1010" y="1305" class="field-text nullable-field">ai_detected_brand: string (nullable)</text>
+    <text x="1010" y="1325" class="field-text nullable-field">ai_detected_model: string (nullable)</text>
+    <text x="1010" y="1345" class="field-text nullable-field">ai_detected_vehicle_type: string (nullable)</text>
+    <text x="1010" y="1365" class="field-text nullable-field">ai_detected_fuel_type: string (nullable)</text>
+    <text x="1010" y="1385" class="field-text nullable-field">ai_detected_year: string (nullable)</text>
+    <text x="1010" y="1405" class="field-text nullable-field">ai_detected_plate_number: string (nullable)</text>
+    <text x="1010" y="1425" class="field-text nullable-field">brand_match_score: float (nullable)</text>
+    <text x="1010" y="1445" class="field-text nullable-field">model_match_score: float (nullable)</text>
+    <text x="1010" y="1465" class="field-text nullable-field">vehicle_type_match_score: float (nullable)</text>
+    <text x="1010" y="1485" class="field-text nullable-field">fuel_type_match_score: float (nullable)</text>
+    <text x="1010" y="1505" class="field-text nullable-field">plate_number_match_score: float (nullable)</text>
+    <text x="1010" y="1525" class="field-text nullable-field">image_quality_score: float (nullable)</text>
+    <text x="1010" y="1545" class="field-text nullable-field">overall_confidence_score: float (nullable)</text>
+    <text x="1010" y="1565" class="field-text">is_vehicle_image: boolean</text>
+    <text x="1010" y="1585" class="field-text">images_analyzed_count: int</text>
+    <text x="1010" y="1605" class="field-text nullable-field">ai_raw_response: json (nullable)</text>
+    <text x="1010" y="1625" class="field-text nullable-field">ai_suggestions: text (nullable)</text>
+    <text x="1010" y="1645" class="field-text nullable-field">discrepancies: json (nullable)</text>
+    <text x="1010" y="1665" class="field-text">verification_passed: boolean</text>
+    <text x="1010" y="1685" class="field-text">requires_manual_review: boolean</text>
+    <text x="1010" y="1705" class="field-text nullable-field">error_message: text (nullable)</text>
+  </g>
+  
+  <!-- Relationships -->
+  
+  <!-- User to Vehicle (One-to-Many) -->
+  <line x1="330" y1="280" x2="450" y2="740" class="relationship-line" marker-end="url(#arrowhead)"/>
+  <text x="350" y="500" class="relationship-label">posts</text>
+  <text x="300" y="490" class="cardinality">1</text>
+  <text x="480" y="750" class="cardinality">*</text>
+  
+  <!-- VehicleCategory to Vehicle (One-to-Many) -->
+  <line x1="1070" y1="130" x2="950" y2="740" class="relationship-line" marker-end="url(#arrowhead)"/>
+  <text x="1000" y="430" class="relationship-label">categorizes</text>
+  <text x="1040" y="140" class="cardinality">1</text>
+  <text x="960" y="750" class="cardinality">*</text>
+  
+  <!-- Vehicle to VehicleImage (One-to-Many) -->
+  <line x1="550" y1="980" x2="225" y2="1200" class="relationship-line" marker-end="url(#arrowhead)"/>
+  <text x="350" y="1080" class="relationship-label">has</text>
+  <text x="530" y="990" class="cardinality">1</text>
+  <text x="200" y="1210" class="cardinality">*</text>
+  
+  <!-- Vehicle to VehicleVerificationResult (One-to-Many) -->
+  <line x1="950" y1="980" x2="1000" y2="1200" class="relationship-line" marker-end="url(#arrowhead)"/>
+  <text x="970" y="1080" class="relationship-label">has</text>
+  <text x="930" y="990" class="cardinality">1</text>
+  <text x="1020" y="1210" class="cardinality">*</text>
+  
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="50" y="1800" width="1300" height="280" fill="#f8f9fa" stroke="#2c3e50" stroke-width="2" rx="5"/>
+    <text x="60" y="1825" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#2c3e50">Legend</text>
+    
+    <text x="60" y="1855" class="field-text pk-field">PK</text>
+    <text x="100" y="1855" class="field-text">Primary Key</text>
+    
+    <text x="250" y="1855" class="field-text fk-field">FK</text>
+    <text x="290" y="1855" class="field-text">Foreign Key</text>
+    
+    <text x="60" y="1885" class="field-text nullable-field">nullable</text>
+    <text x="150" y="1885" class="field-text">Optional/Nullable Field</text>
+    
+    <text x="60" y="1915" class="field-text">1</text>
+    <text x="100" y="1915" class="field-text">One (required)</text>
+    
+    <text x="250" y="1915" class="field-text">*</text>
+    <text x="290" y="1915" class="field-text">Many (zero or more)</text>
+    
+    <text x="500" y="1855" class="field-text">Relationship Types:</text>
+    <text x="500" y="1885" class="field-text">User → Vehicle: CASCADE (on delete)</text>
+    <text x="500" y="1915" class="field-text">VehicleCategory → Vehicle: SET_NULL (on delete)</text>
+    <text x="500" y="1945" class="field-text">Vehicle → VehicleImage: CASCADE (on delete)</text>
+    <text x="500" y="1975" class="field-text">Vehicle → VehicleVerificationResult: CASCADE (on delete)</text>
+  </g>
+</svg>
+

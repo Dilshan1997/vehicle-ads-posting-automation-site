@@ -168,6 +168,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
  
 # Use BigAutoField for primary keys by default to avoid warnings

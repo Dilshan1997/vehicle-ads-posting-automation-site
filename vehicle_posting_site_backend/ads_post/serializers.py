@@ -1,6 +1,6 @@
 # ads_post/serializers.py
 from rest_framework import serializers
-from .models import Vehicle, VehicleCategory, VehicleImage, VehicleVerificationResult
+from .models import Vehicle, VehicleCategory, VehicleImage, VehicleVerificationResult, VehicleDocument
 from django.conf import settings
 
 class VehicleCategorySerializer(serializers.ModelSerializer):
@@ -24,15 +24,36 @@ class VehicleImageSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
 
+
+class VehicleDocumentSerializer(serializers.ModelSerializer):
+    document_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = VehicleDocument
+        fields = ('id', 'document_type', 'document_file', 'document_url', 'extracted_data', 
+                  'extraction_confidence', 'uploaded_at', 'extraction_completed_at')
+        read_only_fields = ('id', 'uploaded_at', 'extraction_completed_at', 'extracted_data', 
+                           'extraction_confidence', 'document_url')
+
+    def get_document_url(self, obj):
+        request = self.context.get('request')
+        if obj.document_file and request:
+            return request.build_absolute_uri(obj.document_file.url)
+        elif obj.document_file:
+            return obj.document_file.url
+        return None
+
 class VehicleVerificationResultSerializer(serializers.ModelSerializer):
     """Serializer for detailed verification results"""
     
     class Meta:
         model = VehicleVerificationResult
         fields = [
-            'id', 'vehicle',             'ai_detected_brand', 'ai_detected_model', 
+            'id', 'vehicle', 'ai_detected_brand', 'ai_detected_model', 
             'ai_detected_vehicle_type', 'ai_detected_fuel_type', 'ai_detected_year',
-            'ai_detected_plate_number', 'brand_match_score', 'model_match_score', 
+            'ai_detected_plate_number', 'document_fuel_type', 'document_vehicle_class',
+            'document_model_year', 'document_manufacturer', 'document_plate_number',
+            'document_match_score', 'brand_match_score', 'model_match_score', 
             'vehicle_type_match_score', 'fuel_type_match_score', 'plate_number_match_score',
             'image_quality_score', 'overall_confidence_score',
             'is_vehicle_image', 'images_analyzed_count', 'ai_suggestions', 
@@ -45,6 +66,7 @@ class VehicleVerificationResultSerializer(serializers.ModelSerializer):
 class VehicleSerializer(serializers.ModelSerializer):
     posted_by = serializers.ReadOnlyField(source='posted_by.id')
     images = VehicleImageSerializer(many=True, read_only=True)
+    documents = VehicleDocumentSerializer(many=True, read_only=True)
     category = serializers.PrimaryKeyRelatedField(queryset=VehicleCategory.objects.all(), required=False, allow_null=True)
     primary_image = serializers.SerializerMethodField(read_only=True)
     
@@ -59,12 +81,12 @@ class VehicleSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'posted_by', 'category', 'manufacturer', 'model', 'city', 'plate_number',
             'year', 'vehicle_type', 'engine_capacity', 'transmission', 'fuel_type',
-            'mileage', 'price', 'description', 'images', 'primary_image', 
+            'mileage', 'price', 'description', 'images', 'documents', 'primary_image', 
             'verification_status', 'is_verified', 'verification_score', 'latest_verification',
             'created_at', 'updated_at'
         ]
         read_only_fields = (
-            'id', 'posted_by', 'created_at', 'updated_at', 'images', 'primary_image',
+            'id', 'posted_by', 'created_at', 'updated_at', 'images', 'documents', 'primary_image',
             'verification_status', 'is_verified', 'verification_score', 'latest_verification'
         )
 

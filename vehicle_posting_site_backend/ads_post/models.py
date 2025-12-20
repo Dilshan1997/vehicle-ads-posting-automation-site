@@ -58,6 +58,32 @@ class VehicleImage(models.Model):
         return f"Image for {self.vehicle}"
 
 
+class VehicleDocument(models.Model):
+    """Stores vehicle documents (emission test certificate or ownership book)"""
+    DOCUMENT_TYPE_CHOICES = [
+        ('emission_test', 'Emission Test Certificate'),
+        ('ownership_book', 'Ownership Book'),
+    ]
+    
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='documents')
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES)
+    document_file = models.FileField(upload_to='vehicle_documents/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    # Extracted information from document (populated by AI)
+    extracted_data = models.JSONField(null=True, blank=True, help_text="Vehicle details extracted from document by AI")
+    extraction_confidence = models.FloatField(null=True, blank=True, help_text="Confidence score for extraction (0-100)")
+    extraction_completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = 'Vehicle Document'
+        verbose_name_plural = 'Vehicle Documents'
+    
+    def __str__(self):
+        return f"{self.get_document_type_display()} for {self.vehicle}"
+
+
 class VehicleVerificationResult(models.Model):
     """Stores detailed AI verification results for vehicle listings"""
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='verification_results')
@@ -69,6 +95,14 @@ class VehicleVerificationResult(models.Model):
     ai_detected_fuel_type = models.CharField(max_length=50, null=True, blank=True)
     ai_detected_year = models.CharField(max_length=20, null=True, blank=True)
     ai_detected_plate_number = models.CharField(max_length=50, null=True, blank=True, help_text="Plate number detected from images by AI")
+    
+    # Document-based information (from emission test or ownership book)
+    document_fuel_type = models.CharField(max_length=50, null=True, blank=True, help_text="Fuel type extracted from document")
+    document_vehicle_class = models.CharField(max_length=80, null=True, blank=True, help_text="Vehicle class from document")
+    document_model_year = models.CharField(max_length=20, null=True, blank=True, help_text="Model year from document")
+    document_manufacturer = models.CharField(max_length=120, null=True, blank=True, help_text="Manufacturer from document")
+    document_plate_number = models.CharField(max_length=50, null=True, blank=True, help_text="Plate number from document")
+    document_match_score = models.FloatField(null=True, blank=True, help_text="Overall match score between form data and document (0-100)")
     
     # Verification scores (0-100)
     brand_match_score = models.FloatField(null=True, blank=True)

@@ -6,7 +6,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from .models import Vehicle, VehicleCategory
+from .models import Vehicle, VehicleCategory, VehicleDocument
 from .serializers import VehicleSerializer, VehicleCategorySerializer
 import jwt
 from django.conf import settings
@@ -17,11 +17,13 @@ JWT_SECRET = getattr(settings, 'JWT_SECRET', settings.SECRET_KEY)
 def get_user_id_from_request(request):
     token = request.COOKIES.get('jwt')
     if not token:
-        raise AuthenticationFailed('Unauthenticated!')
+        raise AuthenticationFailed('Unauthenticated! Please log in to continue.')
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
     except jwt.ExpiredSignatureError:
-        raise AuthenticationFailed('Unauthenticated!')
+        raise AuthenticationFailed('Session expired! Please log in again.')
+    except jwt.InvalidTokenError:
+        raise AuthenticationFailed('Invalid token! Please log in again.')
     return payload['id']
 
 
@@ -55,7 +57,15 @@ class VehicleListCreateView(APIView):
         from .models import VehicleImage
         from django.db import IntegrityError
         
-        user_id = get_user_id_from_request(request)
+        # Get user ID with proper error handling
+        try:
+            user_id = get_user_id_from_request(request)
+        except AuthenticationFailed as e:
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
         data = request.data.copy()
         
         # Check for duplicate plate number if provided
@@ -69,8 +79,22 @@ class VehicleListCreateView(APIView):
                     'existing_vehicle_id': existing_vehicle.id
                 }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Remove images from data as we'll handle them separately
+        # Remove images and documents from data as we'll handle them separately
         images = request.FILES.getlist('images')
+        document_file = request.FILES.get('document')
+        document_type = data.get('document_type', 'emission_test').strip()
+        
+        # Validate document - only emission test is accepted
+        if document_file:
+            if document_type != 'emission_test':
+                return Response({
+                    'detail': 'Only Emission Test Certificate is accepted. Please upload your vehicle\'s emission test certificate.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Document is required
+            return Response({
+                'detail': 'Emission Test Certificate is required. Please upload your vehicle\'s emission test certificate.'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         # Create vehicle
         serializer = VehicleSerializer(data=data, context={'request': request})
@@ -94,7 +118,15 @@ class VehicleListCreateView(APIView):
                 is_primary=(index == 0)  # First image is primary
             )
         
-        # Return updated vehicle with images
+        # Add document if provided
+        if document_file and document_type:
+            VehicleDocument.objects.create(
+                vehicle=vehicle,
+                document_type=document_type,
+                document_file=document_file
+            )
+        
+        # Return updated vehicle with images and document
         updated_serializer = VehicleSerializer(vehicle, context={'request': request})
         return Response(updated_serializer.data, status=status.HTTP_201_CREATED)
 

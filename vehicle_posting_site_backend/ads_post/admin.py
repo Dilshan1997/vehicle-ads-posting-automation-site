@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.db.models import Case, When, IntegerField
-from .models import VehicleCategory, Vehicle, VehicleImage, VehicleVerificationResult
+from .models import VehicleCategory, Vehicle, VehicleImage, VehicleDocument, VehicleVerificationResult
 
 class VehicleImageInline(admin.TabularInline):
     model = VehicleImage
@@ -14,6 +14,28 @@ class VehicleImageInline(admin.TabularInline):
             return format_html('<img src="{}" width="100" height="100" style="object-fit: cover;" />', obj.image.url)
         return "No image"
     image_preview.short_description = 'Preview'
+
+
+class VehicleDocumentInline(admin.TabularInline):
+    model = VehicleDocument
+    extra = 0
+    readonly_fields = ('document_preview', 'extracted_data', 'extraction_confidence', 'extraction_completed_at')
+    can_delete = False
+    
+    def document_preview(self, obj):
+        if obj.document_file:
+            if obj.document_file.name.lower().endswith('.pdf'):
+                return format_html(
+                    '<a href="{}" target="_blank">📄 View PDF</a>',
+                    obj.document_file.url
+                )
+            else:
+                return format_html(
+                    '<img src="{}" width="200" height="150" style="object-fit: contain;" />',
+                    obj.document_file.url
+                )
+        return "No document"
+    document_preview.short_description = 'Preview'
 
 
 class VehicleVerificationResultInline(admin.TabularInline):
@@ -68,7 +90,7 @@ class VehicleAdmin(admin.ModelAdmin):
         'verification_status', 'is_verified', 'verification_score',
         'verification_attempts', 'last_verification_at', 'created_at', 'updated_at'
     )
-    inlines = [VehicleImageInline, VehicleVerificationResultInline]
+    inlines = [VehicleImageInline, VehicleDocumentInline, VehicleVerificationResultInline]
     ordering = ['-created_at']
     
     def get_queryset(self, request):
@@ -260,8 +282,11 @@ class VehicleVerificationResultAdmin(admin.ModelAdmin):
     readonly_fields = (
         'vehicle', 'ai_detected_brand', 'ai_detected_model',
         'ai_detected_vehicle_type', 'ai_detected_fuel_type', 'ai_detected_year',
-        'brand_match_score', 'model_match_score', 'vehicle_type_match_score',
-        'fuel_type_match_score', 'image_quality_score', 'overall_confidence_score',
+        'ai_detected_plate_number', 'document_fuel_type', 'document_vehicle_class',
+        'document_model_year', 'document_manufacturer', 'document_plate_number',
+        'document_match_score', 'brand_match_score', 'model_match_score',
+        'vehicle_type_match_score', 'fuel_type_match_score', 'plate_number_match_score',
+        'image_quality_score', 'overall_confidence_score',
         'is_vehicle_image', 'images_analyzed_count', 'ai_raw_response',
         'ai_suggestions', 'discrepancies', 'verification_passed',
         'requires_manual_review', 'error_message', 'created_at'
@@ -275,8 +300,16 @@ class VehicleVerificationResultAdmin(admin.ModelAdmin):
             'fields': (
                 'ai_detected_brand', 'ai_detected_model',
                 'ai_detected_vehicle_type', 'ai_detected_fuel_type',
-                'ai_detected_year'
+                'ai_detected_year', 'ai_detected_plate_number'
             )
+        }),
+        ('Document Extracted Information', {
+            'fields': (
+                'document_fuel_type', 'document_vehicle_class',
+                'document_model_year', 'document_manufacturer',
+                'document_plate_number', 'document_match_score'
+            ),
+            'classes': ('collapse',)
         }),
         ('Match Scores', {
             'fields': (
@@ -339,6 +372,78 @@ class VehicleVerificationResultAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         """Disable manual creation of verification results"""
         return False
+
+
+@admin.register(VehicleDocument)
+class VehicleDocumentAdmin(admin.ModelAdmin):
+    list_display = ('vehicle_link', 'document_type_display', 'extraction_confidence_display', 'uploaded_at')
+    list_filter = ('document_type', 'extraction_completed_at', 'uploaded_at')
+    search_fields = ('vehicle__manufacturer', 'vehicle__model')
+    readonly_fields = ('document_preview', 'extracted_data', 'extraction_confidence', 'extraction_completed_at', 'uploaded_at')
+    
+    fieldsets = (
+        ('Vehicle Information', {
+            'fields': ('vehicle',)
+        }),
+        ('Document Information', {
+            'fields': ('document_type', 'document_file', 'document_preview')
+        }),
+        ('Extracted Data', {
+            'fields': ('extracted_data', 'extraction_confidence', 'extraction_completed_at'),
+            'classes': ('collapse',)
+        }),
+        ('Metadata', {
+            'fields': ('uploaded_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def vehicle_link(self, obj):
+        """Display link to vehicle in admin"""
+        url = reverse('admin:ads_post_vehicle_change', args=[obj.vehicle.id])
+        return format_html('<a href="{}">{}</a>', url, obj.vehicle)
+    vehicle_link.short_description = 'Vehicle'
+    
+    def document_type_display(self, obj):
+        return obj.get_document_type_display()
+    document_type_display.short_description = 'Document Type'
+    
+    def extraction_confidence_display(self, obj):
+        """Display extraction confidence with color coding"""
+        if obj.extraction_confidence is None:
+            return format_html('<span style="color: #6c757d;">Not extracted</span>')
+        
+        score = obj.extraction_confidence
+        score_formatted = f'{score:.1f}%'
+        
+        if score >= 80:
+            color = '#28a745'  # green
+        elif score >= 60:
+            color = '#ffc107'  # yellow
+        else:
+            color = '#dc3545'  # red
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            score_formatted
+        )
+    extraction_confidence_display.short_description = 'Extraction Confidence'
+    
+    def document_preview(self, obj):
+        if obj.document_file:
+            if obj.document_file.name.lower().endswith('.pdf'):
+                return format_html(
+                    '<a href="{}" target="_blank" class="button">📄 View PDF Document</a>',
+                    obj.document_file.url
+                )
+            else:
+                return format_html(
+                    '<img src="{}" width="400" style="max-width: 100%; height: auto; border: 1px solid #ddd;" />',
+                    obj.document_file.url
+                )
+        return "No document"
+    document_preview.short_description = 'Document Preview'
 
 
 admin.site.register(VehicleCategory)

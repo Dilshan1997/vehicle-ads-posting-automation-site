@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -35,33 +35,42 @@ export default function LoginPage() {
 
     try {
       const result = await login(formData.email, formData.password);
-      
+
       if (result && result.success) {
         // Show loading bar
         startNavigating();
-        
+
         // Wait a moment for auth state to update
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
         // Try router navigation first
         try {
           router.replace("/vehicles");
         } catch (routerError) {
-          console.warn("Router navigation failed, using window.location:", routerError);
+          console.warn(
+            "Router navigation failed, using window.location:",
+            routerError
+          );
           // Fallback to window.location if router fails
           window.location.href = "/vehicles";
         }
       } else {
-        const errorMessage = result?.error || result?.message || "Login failed. Please check your credentials.";
+        const errorMessage =
+          result?.error ||
+          result?.message ||
+          "Login failed. Please check your credentials.";
         setError(errorMessage);
-        
+
         // Check if error is about email verification
-        if (errorMessage.toLowerCase().includes('verify') || errorMessage.toLowerCase().includes('verification')) {
+        if (
+          errorMessage.toLowerCase().includes("verify") ||
+          errorMessage.toLowerCase().includes("verification")
+        ) {
           setShowResendVerification(true);
         } else {
           setShowResendVerification(false);
         }
-        
+
         setLoading(false);
       }
     } catch (err) {
@@ -83,11 +92,17 @@ export default function LoginPage() {
             {error}
             {showResendVerification && (
               <div className="mt-3 pt-3 border-t border-red-300">
-                <p className="text-sm mb-2">Need to resend the verification email?</p>
+                <p className="text-sm mb-2">
+                  Need to resend the verification email?
+                </p>
                 <button
                   onClick={() => {
                     startNavigating();
-                    router.push(`/resend-verification?email=${encodeURIComponent(formData.email)}`);
+                    router.push(
+                      `/resend-verification?email=${encodeURIComponent(
+                        formData.email
+                      )}`
+                    );
                   }}
                   className="text-sm text-red-700 font-semibold hover:underline"
                 >
@@ -100,7 +115,9 @@ export default function LoginPage() {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Email</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Email
+            </label>
             <input
               type="email"
               name="email"
@@ -113,7 +130,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Password</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Password
+            </label>
             <input
               type="password"
               name="password"
@@ -136,7 +155,7 @@ export default function LoginPage() {
 
         <p className="text-center text-gray-600 mt-6">
           Don't have an account?{" "}
-          <button 
+          <button
             onClick={() => {
               startNavigating();
               router.push("/register");
@@ -148,7 +167,7 @@ export default function LoginPage() {
         </p>
 
         <p className="text-center mt-4">
-          <button 
+          <button
             onClick={() => {
               startNavigating();
               router.push("/");
